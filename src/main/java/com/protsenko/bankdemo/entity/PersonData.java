@@ -5,6 +5,7 @@ import jakarta.persistence.Embeddable;
 import jakarta.persistence.Temporal;
 import jakarta.persistence.TemporalType;
 import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.Past;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
@@ -29,5 +30,14 @@ public class PersonData
     @Column(name = "birthday", updatable = false)
     @Temporal(TemporalType.DATE)
     @Setter(value = AccessLevel.NONE)
+    @Past
     private LocalDate birthday;
+
+    protected PersonData(){}
+    public PersonData(String firstName, String lastName, String surname, LocalDate birthday) {
+        this.firstName = firstName;
+        this.lastName = lastName;
+        this.surname = surname;
+        this.birthday = birthday;
+    }
 }
