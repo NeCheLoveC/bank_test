@@ -1,5 +1,6 @@
 package com.protsenko.bankdemo.dto.request;
 
+import com.fasterxml.jackson.annotation.JsonSetter;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
@@ -12,5 +13,6 @@ import java.util.List;
 @Setter
 public class UserAddingEmailsDto
 {
+    @JsonSetter("emails")
     private List<@Email @NotNull String> emails = new LinkedList<>();
 }

@@ -38,8 +38,7 @@ public class User implements UserDetails
     @Size(min = 5)
     @Column(name = "username", unique = true, nullable = false)
     private String username;
-    @NotNull
-    @Size(min = 5)
+    @NotEmpty
     @Column(name = "password", nullable = false)
     private String password;
     @Embedded

@@ -7,6 +7,8 @@ import com.protsenko.bankdemo.security.JwtUtils;
 import com.protsenko.bankdemo.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -20,12 +22,14 @@ import java.util.HashMap;
 import java.util.Optional;
 
 @RestController
-@RequestMapping("/v1/jwt")
+@RequestMapping("api/v1/jwt")
 @RequiredArgsConstructor
 public class JwtController
 {
     private final UserService userService;
     private final JwtUtils jwtUtils;
+    @Autowired
+    @Qualifier("passwordEncoder")
     private final BCryptPasswordEncoder bCryptPasswordEncoder;
     @PostMapping
     public ResponseEntity<?> generateJwt(@RequestBody @Valid UsernamePasswordDto usernamePasswordDto, BindingResult bindingResult)
