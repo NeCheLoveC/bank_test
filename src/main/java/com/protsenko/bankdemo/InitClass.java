@@ -25,10 +25,10 @@ public class InitClass
     @Transactional
     public void init()
     {
-        PersonData personData1 = new PersonData("","","", LocalDate.of(2000, 2,2));
+        //PersonData personData1 = new PersonData("","","", LocalDate.of(2000, 2,2));
         UserRegisterDto user1 = new UserRegisterDto();
         user1.setUsername("admin");
-        user1.setPassword(passwordEncoder.encode("admin"));
+        user1.setPassword("admin");
         user1.setEmail("admin@mail.ru");
         user1.setBirthday(LocalDate.of(2000,2,2));
         user1.setFirstName("Данил");
@@ -36,11 +36,13 @@ public class InitClass
         user1.setSurname("Иванович");
         user1.setMoney(BigDecimal.valueOf(100));
         user1.setPhone("11111111111");
-        userService.create(user1);
+        User user = userService.create(user1);
+
+        boolean match = passwordEncoder.matches("admin", user.getPassword());
 
         UserRegisterDto user2 = new UserRegisterDto();
         user2.setUsername("client01");
-        user2.setPassword(passwordEncoder.encode("admin"));
+        user2.setPassword("admin");
         user2.setEmail("client@mail.ru");
         user2.setBirthday(LocalDate.of(2005,2,2));
         user2.setFirstName("Данил");
@@ -49,7 +51,5 @@ public class InitClass
         user2.setMoney(BigDecimal.valueOf(100));
         user2.setPhone("77777777777");
         userService.create(user2);
-
-
     }
 }

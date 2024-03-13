@@ -37,7 +37,6 @@ public class SecurityConfig
                         auth ->
                                 auth
                                         .requestMatchers("api/v1/jwt", "api/v1/user").permitAll()
-                                        .requestMatchers("api/v1/**").authenticated()
                                         .anyRequest().permitAll()
                 )
                 .csrf(

@@ -6,6 +6,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Collection;
 import java.util.stream.Collectors;
@@ -21,6 +22,7 @@ public class UserResponseDto
     private String firstname;
     private String lastname;
     private String surname;
+    private BigDecimal money;
 
     public UserResponseDto(User user)
     {
@@ -31,5 +33,6 @@ public class UserResponseDto
         firstname = user.getPersonData().getFirstName();
         lastname = user.getPersonData().getLastName();
         surname = user.getPersonData().getSurname();
+        money = user.getMoney();
     }
 }

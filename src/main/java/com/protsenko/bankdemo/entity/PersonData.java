@@ -13,9 +13,9 @@ import lombok.Setter;
 import java.time.LocalDate;
 import java.util.Date;
 
-@Embeddable
 @Getter
 @Setter
+@Embeddable
 public class PersonData
 {
     @Column(name = "first_name", nullable = false)

@@ -12,11 +12,12 @@ import com.protsenko.bankdemo.repository.PhoneRepository;
 import com.protsenko.bankdemo.repository.UserRepository;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
+import jakarta.persistence.Query;
 import jakarta.persistence.TypedQuery;
-import jakarta.persistence.criteria.CriteriaQuery;
-import jakarta.persistence.criteria.Predicate;
-import jakarta.persistence.criteria.Root;
+import jakarta.persistence.criteria.*;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -37,6 +38,8 @@ public class UserService implements UserDetailsService
     private final UserRepository userRepository;
     private final PhoneRepository phoneRepository;
     private final EmailRepository emailRepository;
+    @Autowired
+    @Qualifier("passwordEncoder")
     private final BCryptPasswordEncoder bCryptPasswordEncoder;
     @PersistenceContext
     private final EntityManager entityManager;
@@ -62,7 +65,7 @@ public class UserService implements UserDetailsService
     @Transactional(readOnly = true)
     public Optional<User> findUserByUsername(String username)
     {
-        return userRepository.findByUsernameLike(username);
+        return userRepository.findUserByUsername(username);
     }
 
     @Transactional
@@ -133,7 +136,7 @@ public class UserService implements UserDetailsService
                         throw new HttpCustomException(HttpStatus.BAD_REQUEST, String.format("Email %s уже занят",emailEntity.getEmail()));
                     }
             );
-            phoneRepository.save(new Phone(e, userWrapper.get()));
+            emailRepository.save(new Email(e, userWrapper.get()));
         });
     }
 
@@ -183,29 +186,53 @@ public class UserService implements UserDetailsService
     public List<User> searchUsers(UserFilterDto userFilterDto, int pageSize, int page)
     {
         var queryBuilder = entityManager.getCriteriaBuilder();
-        CriteriaQuery<User> query = queryBuilder.createQuery(User.class);
+        CriteriaQuery query = queryBuilder.createQuery();
         Root<User> root = query.from(User.class);
-        Predicate predicate = queryBuilder.conjunction();
+        //Join<User,Phone> join1 = root.fetch(Phone.class);
+        Predicate predicate = queryBuilder.isTrue(queryBuilder.literal(true)); // Predicate predicate = queryBuilder.conjunction(); - эквивалент?
         if(userFilterDto.getPhone() != null)
         {
-            queryBuilder.and(predicate = queryBuilder.like(root.get("phone"),userFilterDto.getPhone()));
+            Join<User, Phone> phones = root.join("phones");
+            queryBuilder.and(predicate = queryBuilder.like(phones.get("phone"),userFilterDto.getPhone()));
         }
         if(userFilterDto.getBirthday() != null)
         {
-            queryBuilder.and(predicate = queryBuilder.greaterThanOrEqualTo(root.get("birthday"),userFilterDto.getBirthday()));
+            queryBuilder.and(predicate = queryBuilder.and(predicate, queryBuilder.greaterThanOrEqualTo(root.join("personData").get("birthday"),userFilterDto.getBirthday())));
         }
         if(userFilterDto.getEmail() != null)
         {
-            queryBuilder.and(predicate = queryBuilder.like(queryBuilder.function("lower", String.class, root.get("email")), userFilterDto.getEmail().toLowerCase()));
+            Join<User, Email> join = root.join("emails");
+            queryBuilder.and(predicate, queryBuilder.like(queryBuilder.lower( join.get("email")), userFilterDto.getEmail().toLowerCase()));
         }
 
         query.where(predicate);
-        query.select(root);
+        query.select(root).distinct(true).orderBy(queryBuilder.asc(root.get("username")));
 
-        TypedQuery<User> typedQuery = entityManager.createQuery(query);
+        Query typedQuery = entityManager.createQuery(query);
         typedQuery.setMaxResults(pageSize);
         typedQuery.setFirstResult((page - 1) * pageSize);
         List<User> users = typedQuery.getResultList();
         return users;
+    }
+
+    public List<String> findAllUsername()
+    {
+        return userRepository.getAllUsername();
+    }
+
+    @Transactional
+    public void payForDeposit(String username, BigDecimal percent)
+    {
+        Optional<User> userWrapper = userRepository.findByUsernamePessimicticWrite(username);
+        User user = userWrapper.get();
+        BigDecimal newMoney = user.getMoney().multiply(percent.add(BigDecimal.ONE));
+        if(newMoney.compareTo(user.getStartMoneyOnDeposit().multiply(coeffMaxValue)) > 0)
+        {
+            user.setMoney(user.getStartMoneyOnDeposit().multiply(coeffMaxValue));
+        }
+        else
+        {
+            user.setMoney(newMoney);
+        }
     }
 }
