@@ -2,6 +2,7 @@ package com.protsenko.bankdemo.service;
 
 import com.protsenko.bankdemo.dto.request.UserFilterDto;
 import com.protsenko.bankdemo.dto.request.UserRegisterDto;
+import com.protsenko.bankdemo.dto.request.UserSendMoneyToUserDto;
 import com.protsenko.bankdemo.entity.Email;
 import com.protsenko.bankdemo.entity.PersonData;
 import com.protsenko.bankdemo.entity.Phone;
@@ -15,6 +16,7 @@ import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.Query;
 import jakarta.persistence.TypedQuery;
 import jakarta.persistence.criteria.*;
+import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -224,6 +226,8 @@ public class UserService implements UserDetailsService
     public void payForDeposit(String username, BigDecimal percent)
     {
         Optional<User> userWrapper = userRepository.findByUsernamePessimicticWrite(username);
+        if(userWrapper.isEmpty())
+            return;
         User user = userWrapper.get();
         BigDecimal newMoney = user.getMoney().multiply(percent.add(BigDecimal.ONE));
         if(newMoney.compareTo(user.getStartMoneyOnDeposit().multiply(coeffMaxValue)) > 0)
@@ -234,5 +238,24 @@ public class UserService implements UserDetailsService
         {
             user.setMoney(newMoney);
         }
+    }
+
+    @Transactional
+    public void sendMoney(UserSendMoneyToUserDto userSendMoneyToUserDto)
+    {
+        Optional<User> fromUserWrapper = userRepository.findByUsernamePessimicticWrite(userSendMoneyToUserDto.from());
+        Optional<User> destUserWrapper = userRepository.findByUsernamePessimicticWrite(userSendMoneyToUserDto.dest());
+
+        if(fromUserWrapper.isEmpty() || destUserWrapper.isEmpty())
+            throw new HttpCustomException(HttpStatus.BAD_REQUEST, "Пользователь не найден");
+
+        if(fromUserWrapper.get().getMoney().compareTo(userSendMoneyToUserDto.money()) >= 0)
+        {
+            fromUserWrapper.get().setMoney(fromUserWrapper.get().getMoney().subtract(userSendMoneyToUserDto.money()));
+
+            destUserWrapper.get().setMoney(destUserWrapper.get().getMoney().add(userSendMoneyToUserDto.money()));
+        }
+
+        fromUserWrapper.get().setMoney(fromUserWrapper.get().getMoney().add(userSendMoneyToUserDto.money()));
     }
 }
